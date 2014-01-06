@@ -27,7 +27,7 @@ int main(int argc, const char * argv[])
         wchar_t c = L'羽';
         //wchar_t c = 0x66f8;
         
-        int fontHeight = bmpFont.head.fontHeight;
+        int fontHeight = [bmpFont fontHeight];
         
         uint8_t *buffer = malloc(fontHeight*fontHeight);
         int bufferSize, width;

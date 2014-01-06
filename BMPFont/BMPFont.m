@@ -8,8 +8,35 @@
 
 #import "BMPFont.h"
 
+typedef struct
+{
+    char fileHead[4];
+    uint32_t fileSize;
+    uint8_t sectionNum;
+    uint8_t fontHeight;
+    uint16_t flag;
+    char reserve[4];
+}binFileHead;
+
+typedef struct
+{
+    uint32_t offAddr    : 26;
+    uint32_t fontWidth  : 6;
+}binFileCharInfo;
+
+typedef struct
+{
+    uint16_t firstChar;
+    uint16_t lastChar;
+    uint32_t firstAddr;
+}binFileSection;
 
 @implementation BMPFont
+{
+    NSFileHandle *binFile;
+    binFileSection *sections;
+    binFileHead head;
+}
 
 + (instancetype) bmpFontFromBinFile:(NSString *)fileName;
 {
@@ -23,7 +50,7 @@
     
     binFileHead head;
     [data getBytes:&head length:sizeof(binFileHead)];
-    bmpFont.head = head;
+    bmpFont->head = head;
     
     if(!head.sectionNum)
         return nil;
@@ -45,12 +72,23 @@
     return bmpFont;
 }
 
+- (void)dealloc
+{
+    if(sections)
+        free(sections);
+}
+
+- (int) fontHeight
+{
+    return head.fontHeight;
+}
+
 - (bool)unicodeToBmpFont:(wchar_t)unicodeChar bmpFontBuffer:(uint8_t *)buffer bmpFontBufferLen:(int *)bufferLen
            bmpFontWidth:(int *)width
 {
     int section = -1;
     
-    for(int i = 0; i < self.head.sectionNum; i++)
+    for(int i = 0; i < head.sectionNum; i++)
     {
         if(unicodeChar >= (sections+i)->firstChar && unicodeChar <= (wchar_t)(sections+i)->lastChar)
         {
@@ -74,7 +112,7 @@
     if(!info.offAddr)
         return false;
     
-    *bufferLen = self.head.fontHeight*(info.fontWidth+7)/8;
+    *bufferLen = head.fontHeight*(info.fontWidth+7)/8;
     *width = info.fontWidth;
     
     [binFile seekToFileOffset:info.offAddr];
